@@ -26,7 +26,8 @@ ar-business-card demo project
 ## The website deployed on gitHub Pages
 enable gitHub -> "pages" -> "Branch" -> "main" and "/(root)"
 
-## Replace with your own patt marker
+
+## Replace with your own patt marker and your own QR code
 ```shell
 <a-marker type='pattern' url='assets/[PATT FILEPATH]'>
 ```
@@ -36,7 +37,7 @@ enable gitHub -> "pages" -> "Branch" -> "main" and "/(root)"
 ```shell
 <a-entity
     gltf-model="url(assets/[YOUR OWN MODEL])"
-    scale="0.8 0.8 0.8"
+    scale="0.2 0.2 0.2"
     position="0 0.1 0"
     rotation="90 0 0">
 </a-entity>
