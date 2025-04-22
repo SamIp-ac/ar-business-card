@@ -23,24 +23,24 @@
 
     <a-scene 
         embedded 
-        arjs='sourceType: webcam; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3;'
+        arjs='sourceType: webcam; debugUIEnabled: true; detectionMode: mono;'
         renderer='logarithmicDepthBuffer: true; precision: medium;'
         loading-screen="enabled: false">
         
-        <!-- Use a simpler marker pattern first for testing -->
-        <a-marker type='barcode' value='https://samip-ac.github.io/ar-business-card/'> 
+        <!-- Pattern Marker -->
+        <a-marker type='pattern' url='assets/pattern-marker.patt'>
             <!-- Test with simple box first -->
-            <!-- <a-box position='0 0.5 0' material='color: red;'></a-box> -->
+            <a-box position='0 0.5 0' material='color: red;'></a-box>
             
-            <!-- Only add GLB model after simple test works -->
-            
+            <!-- After testing works, you can add your GLB model -->
+            <!--
             <a-entity
                 gltf-model="url(assets/cute_dragon_3d_model_glb.glb)"
                 scale="0.05 0.05 0.05"
                 position="0 0.5 0"
                 rotation="-90 0 0">
             </a-entity>
-           
+            -->
         </a-marker>
 
         <a-entity camera></a-entity>
