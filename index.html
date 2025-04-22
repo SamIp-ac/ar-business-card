@@ -3,74 +3,54 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AR Business Card - [Your Name]</title>
-    <!-- A-Frame Library -->
-    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <title>AR Business Card</title>
+    <!-- Use consistent versions -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.min.js"></script>
     
-
-    <!-- Pure three.js code that the A-Frame components use for location-based AR -->
-    <script type='text/javascript' src='https://raw.githack.com/AR-js-org/AR.js/3.4.5/three.js/build/ar-threex-location-only.js'></script>
-
-    <!-- AR.js A-Frame components -->
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <!-- problem above -->
-
     <style>
-        /* Optional: Style the body or add loading indicators */
         body { margin: 0; overflow: hidden; }
-        .arjs-loader { /* Default loader style override if needed */ }
+        .arjs-loader { height: 100%; width: 100%; position: absolute; top: 0; left: 0; background-color: rgba(0, 0, 0, 0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .arjs-loader div { text-align: center; font-size: 1.25em; color: white; }
     </style>
 </head>
 
-<body style='margin : 0px; overflow: hidden;'>
+<body>
+    <!-- Loading indicator -->
+    <div class="arjs-loader">
+        <div>Loading, please wait...</div>
+    </div>
 
-    <!-- A-Frame Scene with AR.js integrated -->
-    <!-- embedded: Ensures it fits the window -->
-    <!-- arjs='sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: qrcode;' -->
-    <!--   sourceType: webcam - Use the device camera -->
-    <!--   debugUIEnabled: false - Hides AR.js debug overlay -->
-    <!--   detectionMode: mono_and_matrix - Detect both patterns and barcodes/QR codes -->
-    <!--   matrixCodeType: qrcode - Specify we are looking for QR codes -->
-    <a-scene embedded arjs='sourceType: webcam; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: qrcode;'>
-
-        <!-- 
-          Define the Marker (The QR Code itself)
-          type='barcode': Tells AR.js to look for a barcode/QR code.
-          value='YOUR_QR_CODE_URL_HERE': THIS IS CRITICAL! 
-              Replace YOUR_QR_CODE_URL_HERE with the *exact text* encoded in your QR code.
-              Usually, this is your full GitHub Pages URL (e.g., https://your-username.github.io/ar-business-card/)
-        -->
-        <a-marker type='barcode' value='https://samip-ac.github.io/ar-business-card/'> 
-        <!-- ^^^ REPLACE THIS VALUE! ^^^ -->
-
-            <!-- == OPTION 1: Display a 3D Model (.GLB/.GLTF) == -->
-            <!-- Place your .glb file in an 'assets' folder -->
-            <!-- Adjust scale and position as needed -->
+    <a-scene 
+        embedded 
+        arjs='sourceType: webcam; debugUIEnabled: true; detectionMode: mono_and_matrix; matrixCodeType: 3x3;'
+        renderer='logarithmicDepthBuffer: true; precision: medium;'
+        loading-screen="enabled: false">
+        
+        <!-- Use a simpler marker pattern first for testing -->
+        <a-marker type='barcode' value='0'> 
+            <!-- Test with simple box first -->
+            <a-box position='0 0.5 0' material='color: red;'></a-box>
+            
+            <!-- Only add GLB model after simple test works -->
+            <!--
             <a-entity
                 gltf-model="url(assets/cute_dragon_3d_model_glb.glb)"
                 scale="0.05 0.05 0.05"
                 position="0 0.5 0"
                 rotation="-90 0 0">
             </a-entity>
-
-            <!-- == OPTION 2: Display a simple Box (replace with Option 1 or 3) == -->
-            <!-- <a-box position='0 0.5 0' material='color: red;'></a-box> -->
-
-            <!-- == OPTION 3: Display an Image == -->
-            <!-- Place your image file in an 'assets' folder -->
-            <!-- Adjust width, height, position, rotation as needed -->
-            <!-- <a-image src="assets/your-logo.png" width="1" height="1" position="0 0.5 0" rotation="-90 0 0"></a-image> -->
-
-             <!-- == OPTION 4: Display a Video == -->
-             <!-- NOTE: Video requires user interaction to play on many mobile browsers -->
-             <!-- You might need extra JS to handle playing the video -->
-             <!-- <a-video src="assets/your-video.mp4" width="1.6" height="0.9" position="0 0.5 0" rotation="-90 0 0"></a-video> -->
-
-
+            -->
         </a-marker>
 
-        <!-- Static Camera Entity -->
         <a-entity camera></a-entity>
     </a-scene>
+
+    <script>
+        // Hide loader when scene is ready
+        document.querySelector('a-scene').addEventListener('loaded', function() {
+            document.querySelector('.arjs-loader').style.display = 'none';
+        });
+    </script>
 </body>
 </html>
