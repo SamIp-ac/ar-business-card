@@ -37,7 +37,7 @@ enable gitHub -> "pages" -> "Branch" -> "main" and "/(root)"
 ```shell
 <a-entity
     gltf-model="url(assets/[YOUR OWN MODEL])"
-    scale="0.2 0.2 0.2"
+    scale="0.5 0.5 0.5"
     position="0 0.1 0"
     rotation="90 0 0">
 </a-entity>
