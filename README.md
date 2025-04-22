@@ -41,6 +41,3 @@ enable gitHub -> "pages" -> "Branch" -> "main" and "/(root)"
     rotation="90 0 0">
 </a-entity>
 ```
-
-## 
-assets/pattern-qrcode_samip-ac.github.io.png
