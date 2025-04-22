@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Business Card - [Your Name]</title>
+    <!-- A-Frame Library -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <!-- AR.js Library (A-Frame Component) -->
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+
+    <style>
+        /* Optional: Style the body or add loading indicators */
+        body { margin: 0; overflow: hidden; }
+        .arjs-loader { /* Default loader style override if needed */ }
+    </style>
+</head>
+
+<body style='margin : 0px; overflow: hidden;'>
+
+    <!-- A-Frame Scene with AR.js integrated -->
+    <!-- embedded: Ensures it fits the window -->
+    <!-- arjs='sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: qrcode;' -->
+    <!--   sourceType: webcam - Use the device camera -->
+    <!--   debugUIEnabled: false - Hides AR.js debug overlay -->
+    <!--   detectionMode: mono_and_matrix - Detect both patterns and barcodes/QR codes -->
+    <!--   matrixCodeType: qrcode - Specify we are looking for QR codes -->
+    <a-scene embedded arjs='sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: qrcode;'>
+
+        <!-- 
+          Define the Marker (The QR Code itself)
+          type='barcode': Tells AR.js to look for a barcode/QR code.
+          value='YOUR_QR_CODE_URL_HERE': THIS IS CRITICAL! 
+              Replace YOUR_QR_CODE_URL_HERE with the *exact text* encoded in your QR code.
+              Usually, this is your full GitHub Pages URL (e.g., https://your-username.github.io/ar-business-card/)
+        -->
+        <a-marker type='barcode' value='https://<your-username>.github.io/ar-business-card/'> 
+        <!-- ^^^ REPLACE THIS VALUE! ^^^ -->
+
+            <!-- == OPTION 1: Display a 3D Model (.GLB/.GLTF) == -->
+            <!-- Place your .glb file in an 'assets' folder -->
+            <!-- Adjust scale and position as needed -->
+            <a-entity
+                gltf-model="url(assets/your-model.glb)"
+                scale="0.05 0.05 0.05"
+                position="0 0.5 0"
+                rotation="-90 0 0">
+            </a-entity>
+
+            <!-- == OPTION 2: Display a simple Box (replace with Option 1 or 3) == -->
+            <!-- <a-box position='0 0.5 0' material='color: red;'></a-box> -->
+
+            <!-- == OPTION 3: Display an Image == -->
+            <!-- Place your image file in an 'assets' folder -->
+            <!-- Adjust width, height, position, rotation as needed -->
+            <!-- <a-image src="assets/your-logo.png" width="1" height="1" position="0 0.5 0" rotation="-90 0 0"></a-image> -->
+
+             <!-- == OPTION 4: Display a Video == -->
+             <!-- NOTE: Video requires user interaction to play on many mobile browsers -->
+             <!-- You might need extra JS to handle playing the video -->
+             <!-- <a-video src="assets/your-video.mp4" width="1.6" height="0.9" position="0 0.5 0" rotation="-90 0 0"></a-video> -->
+
+
+        </a-marker>
+
+        <!-- Static Camera Entity -->
+        <a-entity camera></a-entity>
+    </a-scene>
+</body>
+</html>
