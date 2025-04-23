@@ -24,7 +24,7 @@ ar-business-card demo project
 
 # DIY
 ## Some free GLB (Capital Letter)
-https://sketchfab.com/tags/glb
+[Free GLB Sources](https://sketchfab.com/tags/glb)
 
 ## The website deployed on gitHub Pages
 enable gitHub -> "pages" -> "Branch" -> "main" and "/(root)"
