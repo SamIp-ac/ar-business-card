@@ -23,8 +23,8 @@
             border-radius: 5px;
             font-size: 14px;
             z-index: 10000;
-            display: none;
             animation: flash 1s infinite;
+            display: none;
         }
         @keyframes flash {
             0% { opacity: 1; }
@@ -53,33 +53,32 @@
         
         <!-- Pattern Marker -->
         <a-marker type='pattern' url='assets/pattern-qrcode_samip-ac.github.io.patt'>
-            <!-- Test with simple box first -->
-            <!-- <a-box position='0 0.5 0' material='color: red;'></a-box> -->
-            
             <a-entity
                 gltf-model="url(assets/the_forgotten_knight.glb)"
                 scale="0.7 0.7 0.7"
                 position="0 0.1 0"
                 rotation="0 0 0">
             </a-entity>
-           
         </a-marker>
 
         <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-        // Hide loader when scene is ready
-        document.querySelector('a-scene').addEventListener('loaded', function() {
-            document.querySelector('.arjs-loader').style.display = 'none';
-            
-            // Show reminder message for 3 seconds
+        // Show reminder message immediately when page loads
+        window.addEventListener('load', function() {
             const reminder = document.querySelector('.reminder-message');
             reminder.style.display = 'block';
             
+            // Hide after 3 seconds
             setTimeout(function() {
                 reminder.style.display = 'none';
             }, 3000);
+        });
+
+        // Hide loader when scene is ready
+        document.querySelector('a-scene').addEventListener('loaded', function() {
+            document.querySelector('.arjs-loader').style.display = 'none';
         });
     </script>
 </body>
