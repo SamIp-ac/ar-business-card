@@ -52,12 +52,13 @@
         loading-screen="enabled: false">
         
         <!-- Pattern Marker -->
-        <a-marker type='pattern' url='assets/pattern-qrcode_samip-ac.github.io.patt'>
+        <a-marker type='pattern' url='assets/pattern-qrcode_samip-ac.github.io.patt' id="ar-marker">
             <a-entity
                 gltf-model="url(assets/the_forgotten_knight.glb)"
                 scale="0.7 0.7 0.7"
                 position="0 0.1 0"
-                rotation="0 0 0">
+                rotation="0 0 0"
+                id="ar-object">
             </a-entity>
         </a-marker>
 
@@ -65,20 +66,30 @@
     </a-scene>
 
     <script>
+        // Variables to track marker visibility
+        let markerVisible = false;
+        const reminder = document.querySelector('.reminder-message');
+        const marker = document.querySelector('#ar-marker');
+        
         // Show reminder message immediately when page loads
         window.addEventListener('load', function() {
-            const reminder = document.querySelector('.reminder-message');
             reminder.style.display = 'block';
-            
-            // Hide after 3 seconds
-            setTimeout(function() {
-                reminder.style.display = 'none';
-            }, 3000);
         });
 
         // Hide loader when scene is ready
         document.querySelector('a-scene').addEventListener('loaded', function() {
             document.querySelector('.arjs-loader').style.display = 'none';
+            
+            // Set up marker visibility detection
+            marker.addEventListener('markerFound', function() {
+                markerVisible = true;
+                reminder.style.display = 'none';
+            });
+            
+            marker.addEventListener('markerLost', function() {
+                markerVisible = false;
+                reminder.style.display = 'block';
+            });
         });
     </script>
 </body>
