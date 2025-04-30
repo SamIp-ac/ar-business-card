@@ -1,4 +1,0 @@
-assets/rx-0_full_armor_unicorn_gundam.glb:
-scale="0.3 0.3 0.3"
-position="0 0.1 0"
-rotation="0 180 0"
