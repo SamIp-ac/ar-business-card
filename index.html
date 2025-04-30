@@ -1,373 +1,97 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>AR Business Card - Interactive Drag/Rotate/Scale</title>
-
-  <!-- A-Frame and AR.js Libraries -->
-  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.min.js"></script>
-
-  <!-- Gesture Components -->
-  <script src="https://cdn.jsdelivr.net/gh/fcor/arjs-gestures@master/dist/gesture-detector.js"></script>
-  <script src="https://cdn.jsdelivr.net/gh/fcor/arjs-gestures@master/dist/gesture-handler.js"></script>
-
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden; /* Prevent scrolling */
-    }
-    .arjs-loader {
-      height: 100%;
-      width: 100%;
-      position: absolute;
-      top: 0;
-      left: 0;
-      background-color: rgba(0, 0, 0, 0.8);
-      z-index: 9999;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .arjs-loader div {
-      text-align: center;
-      font-size: 1.25em;
-      color: white;
-    }
-    .reminder-message {
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(0, 0, 0, 0.7);
-      color: white;
-      padding: 10px 20px;
-      border-radius: 5px;
-      font-size: 14px;
-      z-index: 10000;
-      animation: flash 1.5s infinite; /* Slightly slower flash */
-      display: none; /* Hidden initially */
-      text-align: center;
-    }
-    @keyframes flash {
-      0% { opacity: 1; }
-      50% { opacity: 0.6; }
-      100% { opacity: 1; }
-    }
-    /* Ensure canvas covers the screen and is behind UI elements */
-    a-scene > canvas {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        z-index: 1; /* Behind loader and reminder */
-    }
-  </style>
-
-  <!-- Custom Drag-Move Component -->
-  <script>
-    AFRAME.registerComponent('drag-move', {
-      schema: {
-        speed: { type: 'number', default: 0.004 } // Sensitivity of dragging
-      },
-
-      init: function () {
-        this.isDragging = false;
-        this.previousPosition = { x: 0, y: 0 };
-        this.marker = this.el.closest('a-marker'); // Find the parent marker
-        this.canDrag = false; // Only drag when marker is visible
-        this.sceneEl = this.el.sceneEl; // Cache scene element
-
-        // Bind event handlers to this component instance
-        this.onMouseDown = this.onMouseDown.bind(this);
-        this.onMouseMove = this.onMouseMove.bind(this);
-        this.onMouseUp = this.onMouseUp.bind(this);
-        this.onTouchStart = this.onTouchStart.bind(this);
-        this.onTouchMove = this.onTouchMove.bind(this);
-        this.onTouchEnd = this.onTouchEnd.bind(this);
-        this.onMarkerFound = this.onMarkerFound.bind(this);
-        this.onMarkerLost = this.onMarkerLost.bind(this);
-
-        // Listen for marker visibility if a marker exists
-        if (this.marker) {
-          this.marker.addEventListener('markerFound', this.onMarkerFound);
-          this.marker.addEventListener('markerLost', this.onMarkerLost);
-        } else {
-          console.warn('drag-move component could not find a parent marker.');
-          this.canDrag = true; // Allow dragging even without marker context if needed
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Business Card</title>
+    <!-- Use consistent versions -->
+    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.min.js"></script>
+    
+    <style>
+        body { margin: 0; overflow: hidden; }
+        .arjs-loader { height: 100%; width: 100%; position: absolute; top: 0; left: 0; background-color: rgba(0, 0, 0, 0.8); z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .arjs-loader div { text-align: center; font-size: 1.25em; color: white; }
+        .reminder-message {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 10000;
+            animation: flash 1s infinite;
+            display: none;
         }
-
-        // Add listeners to the scene's canvas for interaction
-        if (this.sceneEl.canvas) {
-            this.addListeners();
-        } else {
-            this.sceneEl.addEventListener('renderstart', () => { // Wait for canvas to be ready
-                this.addListeners();
-            });
+        @keyframes flash {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
-      },
-
-      addListeners: function() {
-          const canvas = this.sceneEl.canvas;
-          canvas.addEventListener('mousedown', this.onMouseDown, { passive: false });
-          canvas.addEventListener('mousemove', this.onMouseMove, { passive: false });
-          // Add mouseup/leave listeners to window to catch drag end even if mouse leaves canvas
-          window.addEventListener('mouseup', this.onMouseUp, { passive: false });
-          window.addEventListener('mouseleave', this.onMouseUp, { passive: false }); // Treat leaving window as mouse up
-
-          canvas.addEventListener('touchstart', this.onTouchStart, { passive: false });
-          canvas.addEventListener('touchmove', this.onTouchMove, { passive: false });
-          canvas.addEventListener('touchend', this.onTouchEnd, { passive: false });
-      },
-
-      remove: function () {
-        // Remove listeners
-        if (this.sceneEl.canvas) {
-            const canvas = this.sceneEl.canvas;
-            canvas.removeEventListener('mousedown', this.onMouseDown);
-            canvas.removeEventListener('mousemove', this.onMouseMove);
-            window.removeEventListener('mouseup', this.onMouseUp);
-            window.removeEventListener('mouseleave', this.onMouseUp);
-            canvas.removeEventListener('touchstart', this.onTouchStart);
-            canvas.removeEventListener('touchmove', this.onTouchMove);
-            canvas.removeEventListener('touchend', this.onTouchEnd);
-        }
-
-        // Remove marker listeners
-        if (this.marker) {
-          this.marker.removeEventListener('markerFound', this.onMarkerFound);
-          this.marker.removeEventListener('markerLost', this.onMarkerLost);
-        }
-      },
-
-      onMarkerFound: function() {
-        this.canDrag = true;
-        // console.log("Marker Found - Drag Enabled");
-      },
-
-      onMarkerLost: function() {
-        this.canDrag = false;
-        this.isDragging = false; // Stop dragging if marker is lost
-        // console.log("Marker Lost - Drag Disabled");
-      },
-
-      // --- Mouse Events ---
-      onMouseDown: function (event) {
-        // Only drag if marker visible and left mouse button
-        if (!this.canDrag || event.button !== 0) return;
-
-        // Check if the gesture-handler is potentially active (multitouch usually sets a flag)
-        // This is a basic check, gesture-handler internal state isn't directly exposed
-        const gestureHandler = this.el.components['gesture-handler'];
-        if (gestureHandler && gestureHandler.isGesture) return; // Don't drag if scaling/rotating
-
-        this.isDragging = true;
-        this.previousPosition = { x: event.clientX, y: event.clientY };
-        // console.log("Mouse Down - Start Drag");
-      },
-
-      onMouseMove: function (event) {
-        if (!this.isDragging || !this.canDrag) return;
-
-        const deltaX = event.clientX - this.previousPosition.x;
-        const deltaY = event.clientY - this.previousPosition.y;
-
-        const currentPosition = this.el.object3D.position; // Use three.js position
-
-        // Map screen movement (X, Y) to object's local plane (X, Z)
-        // Adjust signs and axes based on your desired interaction and initial rotation
-        const newPosition = {
-          x: currentPosition.x + deltaX * this.data.speed,
-          y: currentPosition.y, // Keep Y the same relative to marker
-          z: currentPosition.z + deltaY * this.data.speed // Screen Y maps to Object Z
-        };
-
-        this.el.object3D.position.set(newPosition.x, newPosition.y, newPosition.z);
-        this.previousPosition = { x: event.clientX, y: event.clientY };
-        // console.log("Mouse Move - Dragging");
-      },
-
-      onMouseUp: function (event) {
-        // Only act if we were dragging with the left button
-        if (this.isDragging && event.button === 0) {
-          // console.log("Mouse Up/Leave - End Drag");
-          this.isDragging = false;
-        }
-      },
-
-      // --- Touch Events ---
-      onTouchStart: function (event) {
-        // Check for single touch and marker visibility
-        if (!this.canDrag || event.touches.length !== 1) {
-            // If more than one touch, let gesture-handler potentially take over
-            this.isDragging = false; // Ensure our drag stops if a second finger is added
-            return;
-        }
-
-        // Prevent starting drag if gesture-handler is active
-        const gestureHandler = this.el.components['gesture-handler'];
-        if (gestureHandler && gestureHandler.isGesture) return;
-
-        this.isDragging = true;
-        this.previousPosition = { x: event.touches[0].clientX, y: event.touches[0].clientY };
-        // console.log("Touch Start - Start Drag (1 finger)");
-        event.preventDefault(); // Prevent potential scroll/zoom only if we start dragging
-      },
-
-      onTouchMove: function (event) {
-        // Ensure it's still a single touch drag
-        if (!this.isDragging || !this.canDrag || event.touches.length !== 1) {
-            // If touches change (e.g., second finger added), stop our drag
-            if(this.isDragging) {
-                // console.log("Touch Move - Drag Stopped (touch count changed)");
-                this.isDragging = false;
-            }
-            return; // Let gesture-handler potentially take over
-        }
-
-        const touch = event.touches[0];
-        const deltaX = touch.clientX - this.previousPosition.x;
-        const deltaY = touch.clientY - this.previousPosition.y;
-
-        const currentPosition = this.el.object3D.position;
-        const newPosition = {
-          x: currentPosition.x + deltaX * this.data.speed,
-          y: currentPosition.y,
-          z: currentPosition.z + deltaY * this.data.speed
-        };
-
-        this.el.object3D.position.set(newPosition.x, newPosition.y, newPosition.z);
-        this.previousPosition = { x: touch.clientX, y: touch.clientY };
-        // console.log("Touch Move - Dragging (1 finger)");
-
-        // Prevent default scroll/zoom behavior *during* single-finger drag
-        event.preventDefault();
-      },
-
-      onTouchEnd: function (event) {
-         // Check if our drag was ongoing and is now ending (0 touches left or specific finger lifted)
-         if (this.isDragging && event.touches.length < 1) { // Check touches length OR changedTouches
-            // console.log("Touch End - End Drag");
-            this.isDragging = false;
-         }
-         // If other touches remain, gesture-handler might still be active,
-         // but our single-finger drag state (`this.isDragging`) should be false.
-      }
-    });
-  </script>
-
+    </style>
 </head>
 
 <body>
-  <!-- Loading Indicator -->
-  <div class="arjs-loader">
-    <div>Loading, please wait...</div>
-  </div>
+    <!-- Loading indicator -->
+    <div class="arjs-loader">
+        <div>Loading, please wait...</div>
+    </div>
+    
+    <!-- Reminder message -->
+    <div class="reminder-message">
+        Please scan the same QR code to view AR content
+    </div>
 
-  <!-- Reminder Message -->
-  <div class="reminder-message">
-    Point your camera at the QR code marker to view AR content
-  </div>
+    <a-scene 
+        embedded 
+        arjs='sourceType: webcam; debugUIEnabled: false; detectionMode: mono;'
+        renderer='logarithmicDepthBuffer: true; precision: medium;'
+        loading-screen="enabled: false">
+        
+        <!-- Pattern Marker -->
+        <a-marker type='pattern' url='assets/pattern-qrcode_samip-ac.github.io.patt' id="ar-marker">
+            <a-entity
+                gltf-model="url(assets/SamIp_business_card.glb)"
+                scale="1.4 1.4 1.4"
+                position="0 0.1 0"
+                rotation="90 90 90"
+                id="ar-object">
+            </a-entity>
+        </a-marker>
 
-  <a-scene
-    embedded
-    arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono; matrixCodeType: 3x3;"
-    renderer="logarithmicDepthBuffer: true; precision: medium; antialias: true;"
-    loading-screen="enabled: false"
-    gesture-detector <!-- Must be on the scene for gesture-handler -->
-    vr-mode-ui="enabled: false" <!-- Disable VR button -->
-  >
-    <!-- Pattern Marker -->
-    <!-- Make sure the .patt file path is correct -->
-    <a-marker
-      type="pattern"
-      url="assets/pattern-qrcode_samip-ac.github.io.patt"
-      id="ar-marker"
-      registerevents <!-- Better way to ensure events are captured -->
-      emitevents="true"
-      smooth="true" smoothcount="5" smooththreshold="0.01" smoothfactor="0.9" <!-- Smoothing for marker tracking -->
-    >
-      <!-- The Interactive Object -->
-      <!-- Make sure the .glb file path is correct -->
-      <a-entity
-        id="ar-object"
-        gltf-model="url(assets/SamIp_business_card.glb)"
-        scale="1.4 1.4 1.4"
-        position="0 0.1 0"  
-        rotation="0 0 0"   <!-- Start with simpler rotation relative to marker -->
-        class="clickable" <!-- Keep class if needed for raycasting clicks -->
-        gesture-handler="minScale: 0.5; maxScale: 5; rotationFactor: 5; allowDrag: false;" <!-- Disable gesture-handler's drag -->
-        drag-move="speed: 0.005"  <!-- Enable our custom drag component -->
-      >
-          <!-- Optional: Add an invisible larger plane for easier interaction start if needed -->
-         <!-- <a-plane position="0 0 -0.01" height="2" width="2" material="opacity: 0; transparent: true"></a-plane> -->
-      </a-entity>
+        <a-entity camera></a-entity>
+    </a-scene>
 
-    </a-marker>
-
-    <!-- Static Camera -->
-    <a-entity camera></a-entity>
-
-  </a-scene>
-
-  <!-- Script for Loader and Reminder Message Logic -->
-  <script>
-    window.addEventListener('load', (event) => {
-        const sceneEl = document.querySelector('a-scene');
-        const loader = document.querySelector('.arjs-loader');
+    <script>
+        // Variables to track marker visibility
+        let markerVisible = false;
         const reminder = document.querySelector('.reminder-message');
-        const markerEl = document.querySelector('#ar-marker');
-
-        // Show reminder initially after a short delay
-        // to allow camera access prompt if needed
-        setTimeout(() => {
-            if (!markerEl || !markerEl.object3D.visible) { // Check initial visibility state
-                reminder.style.display = 'block';
-            }
-        }, 1500); // 1.5 seconds delay
-
-        // Hide loader when AR.js is ready (camera initialized)
-        sceneEl.addEventListener('camera-init', (data) => {
-            console.log('AR Camera Initialized');
-            loader.style.display = 'none';
+        const marker = document.querySelector('#ar-marker');
+        
+        // Show reminder message immediately when page loads
+        window.addEventListener('load', function() {
+            reminder.style.display = 'block';
         });
 
-        // Hide loader on error too
-        sceneEl.addEventListener('camera-error', (error) => {
-            console.error('AR Camera Error:', error);
-            loader.style.display = 'none';
-            // Optionally show an error message here
-        });
-
-        // Marker Visibility Logic for Reminder
-        if (markerEl) {
-            markerEl.addEventListener('markerFound', () => {
-                console.log("Marker Found");
+        // Hide loader when scene is ready
+        document.querySelector('a-scene').addEventListener('loaded', function() {
+            document.querySelector('.arjs-loader').style.display = 'none';
+            
+            // Set up marker visibility detection
+            marker.addEventListener('markerFound', function() {
+                markerVisible = true;
                 reminder.style.display = 'none';
             });
-
-            markerEl.addEventListener('markerLost', () => {
-                console.log("Marker Lost");
+            
+            marker.addEventListener('markerLost', function() {
+                markerVisible = false;
                 reminder.style.display = 'block';
             });
-        } else {
-            console.error("Marker element #ar-marker not found for reminder logic.");
-            // Keep reminder visible if marker isn't found in the DOM
-            reminder.style.display = 'block';
-        }
-
-        // Fallback: Hide loader if AR takes too long
-        setTimeout(() => {
-          if (loader.style.display !== 'none') {
-            console.warn("AR Loading timeout, hiding loader.");
-            loader.style.display = 'none';
-          }
-        }, 10000); // Hide after 10 seconds if still visible
-    });
-  </script>
-
+        });
+    </script>
 </body>
 </html>
 
