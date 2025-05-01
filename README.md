@@ -11,6 +11,10 @@ ar-business-card demo project
 * **Marker Value**: `https://samip-ac.github.io/ar-business-card/`
 * **Size Recommendation**: Print at least 8×8 cm (3×3 inches)
 
+### Pre-request
+1. You may use chatGPT to generate your business card
+2. Using image to GLB free online web app
+
 ### How to Use
 1. Print this marker or display it on a screen
 2. Open the AR experience on your mobile device
