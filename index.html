@@ -1,161 +1,117 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Business Card (Marker Based)</title>
-    <!-- Use a recent stable version of A-Frame -->
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <!-- AR.js for A-Frame (Marker Tracking) -->
-    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.min.js"></script>
-    <!-- A-Frame extras component for gesture controls -->
-    <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
-    <!-- Include the specific gesture handler component separately if needed -->
-    <script src="https://unpkg.com/aframe-gesture-handler-component@1.2.1/dist/aframe-gesture-handler-component.min.js"></script>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+  <title>Markerless AR with Gestures</title>
 
-<style>
+  <!-- A-Frame core -->
+  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+  <!-- AR hit-test -->
+  <script src="https://unpkg.com/aframe-ar-hit-test-component@^1.0.0/dist/aframe-ar-hit-test-component.min.js"></script>
+  <!-- Gesture detector & handler -->
+  <script src="https://unpkg.com/aframe-gesture-detector@^1.0.0/dist/aframe-gesture-detector.min.js"></script>
+  <script src="https://unpkg.com/aframe-gesture-handler@^1.0.0/dist/aframe-gesture-handler.min.js"></script>
+
+  <style>
     body { margin: 0; overflow: hidden; }
-    /* AR.js specific loader */
-    .arjs-loader {
-        height: 100%;
-        width: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-        background-color: rgba(0, 0, 0, 0.8);
-        z-index: 9999;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+    .loader {
+      position: absolute; top:0; left:0;
+      width:100%; height:100%;
+      background: rgba(0,0,0,0.8);
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 1.2em; z-index: 9999;
     }
-    .arjs-loader div {
-        text-align: center;
-        font-size: 1.25em;
-        color: white;
+    .reminder {
+      position: absolute; bottom: 20px; left:50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.7);
+      color: #fff; padding: 10px 20px;
+      border-radius: 4px; font-size: 0.9em;
+      display: none; animation: flash 1s infinite;
+      z-index: 10000;
     }
-    /* Simple instruction overlay */
-    #instruction-overlay {
-        position: fixed;
-        bottom: 20px; /* Position at bottom */
-        left: 50%;
-        transform: translateX(-50%);
-        width: 90%; /* Adjust width */
-        max-width: 400px; /* Max width */
-        background-color: rgba(0, 0, 0, 0.7);
-        color: white;
-        padding: 10px 15px; /* Adjust padding */
-        border-radius: 5px;
-        font-size: 14px;
-        z-index: 10000;
-        text-align: center;
-        display: none; /* Start hidden */
-         /* Optional animation */
-        animation: blink 1.5s infinite alternate;
+    @keyframes flash {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
     }
-    @keyframes blink {
-        from { opacity: 1; }
-        to { opacity: 0.6; }
-    }
-    .hidden { display: none; }
-
-</style>
-
+  </style>
 </head>
+<body>
+  <div class="loader">Initializing AR…</div>
+  <div class="reminder">Move your device to scan for surfaces</div>
 
-<body style='margin : 0px; overflow: hidden;'>
-    <!-- AR.js Loading Screen -->
-    <div class="arjs-loader">
-        <div>Loading AR Experience...<br/>Please Allow Camera Access</div>
-    </div>
+  <a-scene
+    embedded
+    renderer="logarithmicDepthBuffer: true"
+    xrweb
+    webxr="optionalFeatures: hit-test; requiredFeatures: local-floor;"
+    ar-hit-test="target: #reticle;"
+    gesture-detector
+    loading-screen="enabled: false"
+  >
+    <!-- Reticle that shows where you'll place the model -->
+    <a-entity
+      id="reticle"
+      geometry="primitive: ring; radiusInner: 0.03; radiusOuter: 0.04;"
+      material="shader: flat; opacity: 0.8;"
+      position="0 0 0"
+      visible="false"
+    ></a-entity>
 
-     <!-- Instruction Overlay -->
-    <div id="instruction-overlay">
-        Point your camera at the target marker to view the AR content.
-    </div>
+    <!-- Your GLB model, initially hidden -->
+    <a-entity
+      id="my-model"
+      gltf-model="url(assets/SamIp_business_card.glb)"
+      visible="false"
+      scale="0.3 0.3 0.3"
+      gesture-handler="enabled: true; rotate: true; scale: true;"
+    ></a-entity>
 
-    <!-- A-Frame Scene with AR.js -->
-    <a-scene
-        embedded
-        arjs='sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;' /* Use mono for pattern, add matrix for QR codes if needed */
-        renderer='logarithmicDepthBuffer: true; colorManagement: true;'
-        vr-mode-ui='enabled: false;' /* Disable VR button */
-        gesture-detector /* Add gesture detector to the scene */
-        loading-screen="dotsColor: white; backgroundColor: black">
+    <!-- Camera -->
+    <a-entity camera></a-entity>
+  </a-scene>
 
-        <!-- Assets Manager -->
-        <a-assets>
-            <a-asset-item id="cardModel" src="assets/SamIp_business_card.glb"></a-asset-item>
-            <!-- Preload pattern file -->
-            <!-- Make sure this path is correct! -->
-            <a-asset-item id="markerPattern" src="assets/pattern-qrcode_samip-ac.github.io.patt"></a-asset-item>
-        </a-assets>
+  <script>
+    const sceneEl = document.querySelector('a-scene');
+    const loader = document.querySelector('.loader');
+    const reminder = document.querySelector('.reminder');
+    const reticle = document.querySelector('#reticle');
+    const model = document.querySelector('#my-model');
 
-        <!-- Basic Lighting -->
-        <a-entity light="type: ambient; color: #BBB"></a-entity>
-        <a-entity light="type: directional; color: #FFF; intensity: 0.8" position="-1 1 1"></a-entity>
+    // Hide loader when A-Frame is ready
+    sceneEl.addEventListener('loaded', () => {
+      loader.style.display = 'none';
+      reminder.style.display = 'block';
+    });
 
-        <!-- Pattern Marker -->
-        <!-- Use the preloaded pattern -->
-        <a-marker type='pattern' url="#markerPattern" id="ar-marker" registerevents> {/* registerevents helps with tracking found/lost */}
+    // When the hit-test reticle gets a valid surface
+    sceneEl.addEventListener('reticlePlaced', (evt) => {
+      reticle.object3D.position.copy(evt.detail.position);
+      reticle.object3D.quaternion.copy(evt.detail.rotation);
+      reticle.setAttribute('visible', true);
+      reminder.style.display = 'none';
+    });
 
-            <!-- The AR Object - Anchored to the marker -->
-            <a-entity
-                id="ar-object"
-                gltf-model="#cardModel"
-                position="0 0.5 0"  /* Position slightly above the marker */
-                scale="0.1 0.1 0.1" /* Adjust scale as needed */
-                rotation="-90 0 0" /* Adjust initial rotation if model is oriented differently */
-                shadow="cast: true; receive: false"
-                gesture-handler="minScale: 0.05; maxScale: 0.5;"> /* Enable gestures */
-                <!-- Optional: Animation or further components -->
-            </a-entity>
+    // If reticle disappears (no surface), show reminder
+    sceneEl.addEventListener('hitLost', () => {
+      reticle.setAttribute('visible', false);
+      reminder.style.display = 'block';
+    });
 
-        </a-marker>
+    // On user tap, place or move the model
+    sceneEl.addEventListener('select', () => {
+      const pos = reticle.object3D.position;
+      const quat = reticle.object3D.quaternion;
 
-        <!-- Camera for AR.js -->
-        <a-entity camera></a-entity>
-    </a-scene>
-
-    <script>
-        const sceneEl = document.querySelector('a-scene');
-        const marker = document.querySelector('#ar-marker');
-        const arObject = document.querySelector('#ar-object');
-        const instructionOverlay = document.getElementById('instruction-overlay');
-
-        window.addEventListener('load', () => {
-            // The AR.js loader covers the initial loading.
-            // Show instructions once the scene is ready or slightly after.
-             setTimeout(() => {
-                if (instructionOverlay) instructionOverlay.style.display = 'block';
-            }, 1500); // Show after 1.5 seconds to allow camera init
-        });
-
-         // Optional: Hide instructions when marker is found, show when lost
-        if (marker) {
-            marker.addEventListener('markerFound', () => {
-                console.log('Marker Found');
-                if (instructionOverlay) instructionOverlay.classList.add('hidden'); // Hide instructions
-                // You could add interaction hints here if needed
-            });
-
-            marker.addEventListener('markerLost', () => {
-                console.log('Marker Lost');
-                 if (instructionOverlay) instructionOverlay.classList.remove('hidden'); // Show instructions again
-            });
-        }
-
-         // Hide AR.js default loader when the scene is ready
-         // Note: A-Frame's built-in loader might also show briefly
-        sceneEl.addEventListener('loaded', () => {
-             const arjsLoader = document.querySelector('.arjs-loader');
-             if (arjsLoader) {
-                 arjsLoader.style.display = 'none';
-             }
-             console.log("A-Frame scene loaded.");
-         });
-
-        // Gesture handling is managed by the gesture-handler component itself
-
-    </script>
+      model.object3D.position.copy(pos);
+      model.object3D.quaternion.copy(quat);
+      model.setAttribute('visible', true);
+    });
+  </script>
 </body>
 </html>
