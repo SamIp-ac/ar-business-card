@@ -99,7 +99,6 @@
           requiredFeatures: ['local-floor'],
           domOverlay: { root: document.body }
         });
-        // Attach XR session to A-Frame renderer
         sceneEl.renderer.xr.setSession(session);
         enterAR.style.display = 'none';
       } catch (err) {
@@ -111,7 +110,6 @@
     // A-Frame loaded
     sceneEl.addEventListener('loaded', () => {
       loader.style.display = 'none';
-      // Show reminder until first surface hit
       reminder.style.display = 'block';
     });
 
