@@ -10,14 +10,14 @@
 
   <!-- A-Frame core -->
   <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-  <!-- AR hit-test -->
+  <!-- AR hit-test component -->
   <script src="https://unpkg.com/aframe-ar-hit-test-component@^1.0.0/dist/aframe-ar-hit-test-component.min.js"></script>
   <!-- Gesture detector & handler -->
   <script src="https://unpkg.com/aframe-gesture-detector@^1.0.0/dist/aframe-gesture-detector.min.js"></script>
   <script src="https://unpkg.com/aframe-gesture-handler@^1.0.0/dist/aframe-gesture-handler.min.js"></script>
 
   <style>
-    body { margin: 0; overflow: hidden; }
+    body { margin: 0; overflow: hidden; font-family: sans-serif; }
     .loader {
       position: absolute; top:0; left:0;
       width:100%; height:100%;
@@ -25,45 +25,46 @@
       display: flex; align-items: center; justify-content: center;
       color: #fff; font-size: 1.2em; z-index: 9999;
     }
-    .reminder {
-      position: absolute; bottom: 20px; left:50%;
+    .reminder, #enter-ar {
+      position: absolute;
+      bottom: 20px; left:50%;
       transform: translateX(-50%);
       background: rgba(0,0,0,0.7);
       color: #fff; padding: 10px 20px;
-      border-radius: 4px; font-size: 0.9em;
-      display: none; animation: flash 1s infinite;
+      border: none; border-radius: 4px; font-size: 0.9em;
       z-index: 10000;
     }
+    .reminder { display: none; animation: flash 1s infinite; }
     @keyframes flash {
       0% { opacity: 1; }
       50% { opacity: 0.5; }
       100% { opacity: 1; }
     }
+    #enter-ar { cursor: pointer; }
   </style>
 </head>
 <body>
   <div class="loader">Initializing AR…</div>
   <div class="reminder">Move your device to scan for surfaces</div>
+  <button id="enter-ar">Enter AR</button>
 
   <a-scene
     embedded
     renderer="logarithmicDepthBuffer: true"
-    xrweb
     webxr="optionalFeatures: hit-test; requiredFeatures: local-floor;"
     ar-hit-test="target: #reticle;"
     gesture-detector
     loading-screen="enabled: false"
   >
-    <!-- Reticle that shows where you'll place the model -->
+    <!-- Reticle for placement -->
     <a-entity
       id="reticle"
       geometry="primitive: ring; radiusInner: 0.03; radiusOuter: 0.04;"
       material="shader: flat; opacity: 0.8;"
-      position="0 0 0"
       visible="false"
     ></a-entity>
 
-    <!-- Your GLB model, initially hidden -->
+    <!-- Your GLB model, hidden until placed -->
     <a-entity
       id="my-model"
       gltf-model="url(assets/SamIp_business_card.glb)"
@@ -72,44 +73,67 @@
       gesture-handler="enabled: true; rotate: true; scale: true;"
     ></a-entity>
 
-    <!-- Camera -->
     <a-entity camera></a-entity>
   </a-scene>
 
   <script>
+    const enterAR = document.getElementById('enter-ar');
     const sceneEl = document.querySelector('a-scene');
     const loader = document.querySelector('.loader');
     const reminder = document.querySelector('.reminder');
-    const reticle = document.querySelector('#reticle');
-    const model = document.querySelector('#my-model');
+    const reticle = document.getElementById('reticle');
+    const model = document.getElementById('my-model');
 
-    // Hide loader when A-Frame is ready
+    // Hide AR button if WebXR AR not supported
+    navigator.xr?.isSessionSupported('immersive-ar').then((supported) => {
+      if (!supported) {
+        enterAR.textContent = 'AR Not Supported';
+        enterAR.disabled = true;
+      }
+    });
+
+    enterAR.addEventListener('click', async () => {
+      try {
+        const session = await navigator.xr.requestSession('immersive-ar', {
+          optionalFeatures: ['hit-test', 'dom-overlay'],
+          requiredFeatures: ['local-floor'],
+          domOverlay: { root: document.body }
+        });
+        // Attach XR session to A-Frame renderer
+        sceneEl.renderer.xr.setSession(session);
+        enterAR.style.display = 'none';
+      } catch (err) {
+        console.error('Failed to start AR session:', err);
+        enterAR.textContent = 'Failed to Enter AR';
+      }
+    });
+
+    // A-Frame loaded
     sceneEl.addEventListener('loaded', () => {
       loader.style.display = 'none';
+      // Show reminder until first surface hit
       reminder.style.display = 'block';
     });
 
-    // When the hit-test reticle gets a valid surface
+    // When a surface is found
     sceneEl.addEventListener('reticlePlaced', (evt) => {
-      reticle.object3D.position.copy(evt.detail.position);
-      reticle.object3D.quaternion.copy(evt.detail.rotation);
+      const { position, rotation } = evt.detail;
+      reticle.object3D.position.copy(position);
+      reticle.object3D.quaternion.copy(rotation);
       reticle.setAttribute('visible', true);
       reminder.style.display = 'none';
     });
 
-    // If reticle disappears (no surface), show reminder
+    // If surface lost
     sceneEl.addEventListener('hitLost', () => {
       reticle.setAttribute('visible', false);
       reminder.style.display = 'block';
     });
 
-    // On user tap, place or move the model
+    // On tap, place or move the model
     sceneEl.addEventListener('select', () => {
-      const pos = reticle.object3D.position;
-      const quat = reticle.object3D.quaternion;
-
-      model.object3D.position.copy(pos);
-      model.object3D.quaternion.copy(quat);
+      model.object3D.position.copy(reticle.object3D.position);
+      model.object3D.quaternion.copy(reticle.object3D.quaternion);
       model.setAttribute('visible', true);
     });
   </script>
