@@ -3,243 +3,158 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AR Plane Detection with Object Interaction</title>
+    <title>AR Business Card (Marker Based)</title>
     <!-- Use a recent stable version of A-Frame -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+    <!-- AR.js for A-Frame (Marker Tracking) -->
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.min.js"></script>
     <!-- A-Frame extras component for gesture controls -->
     <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
     <!-- Include the specific gesture handler component separately if needed -->
     <script src="https://unpkg.com/aframe-gesture-handler-component@1.2.1/dist/aframe-gesture-handler-component.min.js"></script>
 
-
 <style>
     body { margin: 0; overflow: hidden; }
-    #ar-scene { height: 100vh; width: 100vw; }
-    /* Simple loading/instruction overlay */
-    #overlay {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background-color: rgba(0, 0, 0, 0.7);
-        color: white;
-        font-size: 1.25em;
-        z-index: 10000;
+    /* AR.js specific loader */
+    .arjs-loader {
+        height: 100%;
+        width: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 9999;
         display: flex;
         justify-content: center;
         align-items: center;
-        text-align: center;
-        padding: 20px;
-        box-sizing: border-box; /* Include padding in size */
     }
-    #overlay button {
-        padding: 12px 20px;
-        font-size: 1em;
-        cursor: pointer;
-        margin-top: 20px;
+    .arjs-loader div {
+        text-align: center;
+        font-size: 1.25em;
+        color: white;
+    }
+    /* Simple instruction overlay */
+    #instruction-overlay {
+        position: fixed;
+        bottom: 20px; /* Position at bottom */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%; /* Adjust width */
+        max-width: 400px; /* Max width */
+        background-color: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px 15px; /* Adjust padding */
+        border-radius: 5px;
+        font-size: 14px;
+        z-index: 10000;
+        text-align: center;
+        display: none; /* Start hidden */
+         /* Optional animation */
+        animation: blink 1.5s infinite alternate;
+    }
+    @keyframes blink {
+        from { opacity: 1; }
+        to { opacity: 0.6; }
     }
     .hidden { display: none; }
 
-    /* Reticle style */
-    #reticle {
-        /* A simple ring reticle */
-        geometry: primitive: ring; radiusInner: 0.01; radiusOuter: 0.015;
-        material: color: white; shader: flat; side: double; /* Ensure visibility */
-        rotation: -90 0 0; /* Rotate to lie flat on the detected plane */
-    }
 </style>
 
 </head>
 
-<body>
-    <!-- Instructions/Loading/Enter AR Button -->
-    <div id="overlay">
-        <div>
-            Loading AR Experience...<br>
-            Point your camera towards a flat surface (like the floor or a table).<br>
-            <span id="ar-support-message"></span>
-            <!-- Button might be handled by A-Frame's default UI, but we can add one -->
-             <button id="enter-ar-button" class="hidden">Enter AR</button>
-        </div>
+<body style='margin : 0px; overflow: hidden;'>
+    <!-- AR.js Loading Screen -->
+    <div class="arjs-loader">
+        <div>Loading AR Experience...<br/>Please Allow Camera Access</div>
     </div>
 
-    <!-- A-Frame Scene for WebXR -->
+     <!-- Instruction Overlay -->
+    <div id="instruction-overlay">
+        Point your camera at the target marker to view the AR content.
+    </div>
+
+    <!-- A-Frame Scene with AR.js -->
     <a-scene
-        id="ar-scene"
-        webxr="
-            requiredFeatures: hit-test, local-floor;
-            optionalFeatures: dom-overlay, light-estimation;
-            overlayElement: #overlay;"
-        renderer="logarithmicDepthBuffer: true; colorManagement: true;"
-        gesture-detector> {/* Add gesture detector to the scene */}
+        embedded
+        arjs='sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;' /* Use mono for pattern, add matrix for QR codes if needed */
+        renderer='logarithmicDepthBuffer: true; colorManagement: true;'
+        vr-mode-ui='enabled: false;' /* Disable VR button */
+        gesture-detector /* Add gesture detector to the scene */
+        loading-screen="dotsColor: white; backgroundColor: black">
 
         <!-- Assets Manager -->
         <a-assets>
             <a-asset-item id="cardModel" src="assets/SamIp_business_card.glb"></a-asset-item>
-             <!-- Optional: Add environment map for better lighting -->
-            <!-- <a-asset-item id="envMap" src="path/to/your/environment.hdr"></a-asset-item> -->
+            <!-- Preload pattern file -->
+            <!-- Make sure this path is correct! -->
+            <a-asset-item id="markerPattern" src="assets/pattern-qrcode_samip-ac.github.io.patt"></a-asset-item>
         </a-assets>
 
-         <!-- Basic Lighting -->
+        <!-- Basic Lighting -->
         <a-entity light="type: ambient; color: #BBB"></a-entity>
-        <a-entity light="type: directional; color: #FFF; intensity: 0.6" position="-0.5 1 1"></a-entity>
-         <!-- If using light-estimation feature -->
-        <!-- <a-entity light="type: ambient; intensity: 0.5" webxr-light-estimation></a-entity> -->
-        <!-- <a-entity light="type: directional; intensity: 0.8; castShadow: true;" webxr-light-estimation></a-entity> -->
+        <a-entity light="type: directional; color: #FFF; intensity: 0.8" position="-1 1 1"></a-entity>
 
-        <!-- Camera Rig -->
-        <a-entity id="cameraRig" position="0 1.6 0">
-             <a-entity id="camera"
-                 camera
-                 position="0 0 0"
-                 look-controls="enabled: false" {/* Disable default look controls in AR */}
-                 >
-                <!-- Reticle to show hit-test point - starts invisible -->
-                <a-entity id="reticle" visible="false"></a-entity>
-             </a-entity>
-        </a-entity>
+        <!-- Pattern Marker -->
+        <!-- Use the preloaded pattern -->
+        <a-marker type='pattern' url="#markerPattern" id="ar-marker" registerevents> {/* registerevents helps with tracking found/lost */}
 
-        <!-- The AR Object - initially invisible and placed when a plane is tapped -->
-        <a-entity
-            id="ar-object"
-            gltf-model="#cardModel"
-            position="0 -1000 0" /* Start far away or invisible */
-            scale="0.1 0.1 0.1" /* Adjust initial scale as needed */
-            rotation="0 0 0" /* Adjust initial rotation */
-            visible="false"
-            shadow="cast: true; receive: false"
-            gesture-handler="minScale: 0.05; maxScale: 0.5;" /* Enable gestures */
-            >
-            <!-- Optional: Animation or further components -->
-        </a-entity>
+            <!-- The AR Object - Anchored to the marker -->
+            <a-entity
+                id="ar-object"
+                gltf-model="#cardModel"
+                position="0 0.5 0"  /* Position slightly above the marker */
+                scale="0.1 0.1 0.1" /* Adjust scale as needed */
+                rotation="-90 0 0" /* Adjust initial rotation if model is oriented differently */
+                shadow="cast: true; receive: false"
+                gesture-handler="minScale: 0.05; maxScale: 0.5;"> /* Enable gestures */
+                <!-- Optional: Animation or further components -->
+            </a-entity>
 
-        <!-- Hit test entity - used to find planes -->
-        <a-entity id="hit-tester" ar-hit-test="target: #reticle; type: plane; enabled: false;"></a-entity>
+        </a-marker>
 
+        <!-- Camera for AR.js -->
+        <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-        const sceneEl = document.querySelector('#ar-scene');
-        const overlay = document.getElementById('overlay');
-        const arObject = document.getElementById('ar-object');
-        const reticle = document.getElementById('reticle');
-        const hitTester = document.getElementById('hit-tester');
-        const arSupportMessage = document.getElementById('ar-support-message');
-        const enterArButton = document.getElementById('enter-ar-button'); // If using custom button
-        let objectPlaced = false;
+        const sceneEl = document.querySelector('a-scene');
+        const marker = document.querySelector('#ar-marker');
+        const arObject = document.querySelector('#ar-object');
+        const instructionOverlay = document.getElementById('instruction-overlay');
 
         window.addEventListener('load', () => {
-            if (navigator.xr) {
-                navigator.xr.isSessionSupported('immersive-ar')
-                    .then((supported) => {
-                        if (supported) {
-                            arSupportMessage.textContent = "AR is supported! Click 'Enter AR' when it appears.";
-                            // A-Frame usually adds its own Enter AR button if needed.
-                            // You might need to show your custom button if A-Frame's doesn't appear or you hide it.
-                            // enterArButton.classList.remove('hidden');
-                        } else {
-                            arSupportMessage.textContent = "AR is not supported on this browser/device.";
-                            overlay.innerHTML = `<div>AR Mode Not Supported.<br>Please try on a compatible device (e.g., Chrome on Android with ARCore, Safari on iOS with ARKit).</div>`;
-                        }
-                    })
-                    .catch((err) => {
-                         console.error("Error checking XR support:", err);
-                         arSupportMessage.textContent = "Could not check for AR support.";
-                         overlay.innerHTML = `<div>Error checking AR support.</div>`;
-                    });
-            } else {
-                 arSupportMessage.textContent = "WebXR API not available.";
-                 overlay.innerHTML = `<div>WebXR not available.<br>Please use a modern browser that supports WebXR.</div>`;
-            }
+            // The AR.js loader covers the initial loading.
+            // Show instructions once the scene is ready or slightly after.
+             setTimeout(() => {
+                if (instructionOverlay) instructionOverlay.style.display = 'block';
+            }, 1500); // Show after 1.5 seconds to allow camera init
         });
 
+         // Optional: Hide instructions when marker is found, show when lost
+        if (marker) {
+            marker.addEventListener('markerFound', () => {
+                console.log('Marker Found');
+                if (instructionOverlay) instructionOverlay.classList.add('hidden'); // Hide instructions
+                // You could add interaction hints here if needed
+            });
 
+            marker.addEventListener('markerLost', () => {
+                console.log('Marker Lost');
+                 if (instructionOverlay) instructionOverlay.classList.remove('hidden'); // Show instructions again
+            });
+        }
+
+         // Hide AR.js default loader when the scene is ready
+         // Note: A-Frame's built-in loader might also show briefly
         sceneEl.addEventListener('loaded', () => {
-            console.log("A-Frame scene loaded.");
-            // Initial setup message in overlay is fine
-        });
+             const arjsLoader = document.querySelector('.arjs-loader');
+             if (arjsLoader) {
+                 arjsLoader.style.display = 'none';
+             }
+             console.log("A-Frame scene loaded.");
+         });
 
-        // Handle entering AR mode
-        sceneEl.addEventListener('enter-vr', () => {
-            if (sceneEl.is('ar-mode')) {
-                 console.log("Entered AR mode.");
-                 overlay.innerHTML = `<div>Move your phone slowly to detect surfaces...</div>`;
-                 // Enable hit testing only when in AR mode
-                 hitTester.setAttribute('ar-hit-test', 'enabled', true);
-                 // Hide the overlay instructions once detection starts or after a short delay
-                 setTimeout(() => {
-                     if (!objectPlaced) { // Only hide if not placed yet
-                        overlay.classList.add('hidden');
-                     }
-                 }, 3000); // Hide after 3 seconds
-            }
-        });
-
-        // Handle exiting AR mode
-        sceneEl.addEventListener('exit-vr', () => {
-             console.log("Exited AR mode.");
-             overlay.classList.remove('hidden');
-             overlay.innerHTML = `<div>Exited AR Mode.<br><button onclick="window.location.reload()">Restart</button></div>`; // Simple restart
-             // Disable hit testing
-             hitTester.setAttribute('ar-hit-test', 'enabled', false);
-             // Hide object and reticle
-             arObject.setAttribute('visible', false);
-             reticle.setAttribute('visible', false);
-             objectPlaced = false; // Reset placement status
-             arObject.object3D.position.set(0, -1000, 0); // Move object away
-        });
-
-        // Listen for hit test results to update the reticle
-        hitTester.addEventListener('ar-hit-test-start', () => {
-            console.log('AR Hit Test Started - Looking for surfaces');
-            if (!objectPlaced) reticle.setAttribute('visible', true);
-        });
-
-        hitTester.addEventListener('ar-hit-test-achieved', () => {
-            console.log('AR Hit Test Surface Found');
-             if (!objectPlaced) reticle.setAttribute('visible', true);
-        });
-
-        hitTester.addEventListener('ar-hit-test-lost', () => {
-            console.log('AR Hit Test Lost Surface');
-            reticle.setAttribute('visible', false);
-        });
-
-
-        // Handle tap/select event to place the object
-        sceneEl.addEventListener('click', (event) => {
-             // Place object only if in AR mode and a surface is detected (reticle is visible)
-            if (sceneEl.is('ar-mode') && reticle.getAttribute('visible') && !objectPlaced) {
-                console.log("Tap detected on a surface.");
-
-                // Get position and orientation from the reticle (which is updated by ar-hit-test)
-                const position = reticle.object3D.position;
-                const rotation = reticle.object3D.rotation; // Use orientation if needed
-
-                // Set the AR object's position and make it visible
-                arObject.setAttribute('position', position);
-                // Optional: Align object rotation with the surface normal if desired
-                // arObject.setAttribute('rotation', { x: 0, y: rotation.y * (180 / Math.PI) , z: 0 }); // Example Y rotation
-                arObject.setAttribute('rotation', { x: 0, y: 0, z: 0 }); // Keep it upright initially, adjust Y if needed
-                arObject.setAttribute('visible', true);
-
-                // Disable further placement and hide reticle
-                objectPlaced = true;
-                reticle.setAttribute('visible', false);
-                hitTester.setAttribute('ar-hit-test', 'enabled', false); // Stop hit testing after placement
-
-                 // Optionally show interaction hints
-                overlay.innerHTML = '<div>Object placed! Use one finger to move, two fingers to scale/rotate.</div>';
-                overlay.classList.remove('hidden');
-                setTimeout(() => overlay.classList.add('hidden'), 4000); // Hide hint after 4 seconds
-            } else if (sceneEl.is('ar-mode') && !reticle.getAttribute('visible')) {
-                 console.log("Tap detected, but no surface found at that point.");
-            } else if (objectPlaced) {
-                 console.log("Tap detected, but object already placed.");
-            }
-        });
-
-        // Note: aframe-gesture-handler automatically listens for touch events
-        // on entities with the 'gesture-handler' component.
+        // Gesture handling is managed by the gesture-handler component itself
 
     </script>
 </body>
