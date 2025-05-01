@@ -6,37 +6,33 @@
     <title>AR Business Card - Place Object</title>
 
     <!-- A-Frame Core -->
-    <!-- Consider using a slightly older version like 1.5.0 if 1.7.1 causes issues with interaction components -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 
-    <!-- A-Frame Extras provides ar-hit-test -->
-    <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.4.0/dist/aframe-extras.min.js"></script>
+    <!-- A-Frame Extras - Using v7.2.0 for potentially better compatibility with A-Frame 1.5.0 -->
+    <script src="https://cdn.jsdelivr.net/npm/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
 
-    <!-- Superhands for Interactions (pinch, drag, etc.) -->
+    <!-- Superhands for Interactions -->
     <script src="https://unpkg.com/super-hands@3.0.3/dist/super-hands.min.js"></script>
-
 
     <style>
         body { margin: 0; overflow: hidden; }
-        /* Default A-Frame loading screen is fine */
         .instruction-message {
             position: fixed;
-            bottom: 20px; /* Adjusted position */
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             background-color: rgba(0, 0, 0, 0.7);
             color: white;
-            padding: 12px 25px; /* Slightly larger padding */
-            border-radius: 8px; /* More rounded corners */
-            font-size: 16px; /* Slightly larger font */
-            font-family: sans-serif; /* Explicit font */
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: sans-serif;
             z-index: 10000;
             text-align: center;
-            display: none; /* Hidden by default, shown via script */
+            display: none;
         }
-         /* Style for the AR button if needed (A-Frame often adds one) */
         .a-enter-ar-button {
-            bottom: 80px !important; /* Move button up if it overlaps instructions */
+            bottom: 80px !important;
         }
     </style>
 </head>
@@ -50,32 +46,28 @@
     <a-scene
         webxr="requiredFeatures: hit-test,local-floor;
                optionalFeatures: dom-overlay;
-               overlayElement: #overlay;"
-        ar-hit-test="target:#reticle; type:map;"  
-        renderer="logarithmicDepthBuffer: true; colorManagement: true;"
+               overlayElement: #overlay;" /* Keep overlay for now, simplify if needed */
+        ar-hit-test="target:#reticle; type:map;"
+        renderer="logarithmicDepthBuffer: true; colorManagement: true; useLegacyLights: false;" /* Added useLegacyLights: false */
         background="color: #ECECEC"
-        gesture-detector>  <!-- Add gesture-detector for superhands -->
+        gesture-detector>
 
         <a-assets>
             <a-asset-item id="cardModel" src="assets/SamIp_business_card.glb"></a-asset-item>
-             <!-- Optional: Sound for placement -->
-             <!-- <audio id="placeSound" src="assets/place_sound.mp3" preload="auto"></audio> -->
+            <!-- <audio id="placeSound" src="assets/place_sound.mp3" preload="auto"></audio> -->
         </a-assets>
 
         <!-- Camera Rig -->
         <a-entity id="cameraRig">
-             <!-- Camera -->
             <a-entity id="camera"
                 camera
                 position="0 1.6 0"
                 look-controls="magicWindowTrackingEnabled: false; touchEnabled: false; mouseEnabled: false">
-                 <!-- Reticle: Visual indicator for hit-testing -->
                 <a-entity id="reticle"
                     scale="0.8 0.8 0.8"
                     rotation="-90 0 0"
-                    ar-hit-test-target <!-- Important for the ar-hit-test component -->
+                    ar-hit-test-target
                     visible="false">
-                    <!-- Simple ring or use a custom model -->
                     <a-ring
                         radius-inner="0.10"
                         radius-outer="0.15"
@@ -84,33 +76,28 @@
                     </a-ring>
                  </a-entity>
             </a-entity>
-             <!-- Controller for Superhands interaction -->
             <a-entity id="controller"
                 super-hands="colliderEvent: raycaster-intersection;
                              colliderEventProperty: els;
                              colliderEndEvent:raycaster-intersection-cleared;
                              colliderEndEventProperty: clearedEls;"
-                hand-controls="hand: right; handModelStyle: lowPoly; color: #ffcccc" <!-- Or use laser-controls -->
-                raycaster="objects: .interactable; far: 5;">
+                hand-controls="hand: right; handModelStyle: lowPoly; color: #ffcccc"
+                raycaster="objects: .interactable; far: 5;"> <!-- Raycaster config seems correct -->
             </a-entity>
         </a-entity>
-
 
         <!-- Placed Business Card Model -->
         <a-entity
             id="businessCard"
             gltf-model="#cardModel"
-            class="interactable" <!-- Class for raycaster targeting -->
-            visible="false"     <!-- Initially hidden -->
-            scale="1.3 1.3 1.3" <!-- Adjust scale as needed -->
-            rotation="0 0 0"   <!-- Initial rotation (will be placed flat) -->
-            position="0 -100 0" <!-- Initially placed off-screen -->
-            gesture-handler="minScale: 0.5; maxScale: 3;" <!-- Superhands component for pinch/drag -->
-            >
-            <!-- Add shadow for realism if desired -->
+            class="interactable"
+            visible="false"
+            scale="1.3 1.3 1.3"
+            rotation="0 0 0"
+            position="0 -100 0"
+            gesture-handler="minScale: 0.5; maxScale: 3;">
              <a-plane material="shader: shadow; opacity: 0.6;" rotation="-90 0 0" width="1" height="1" shadow></a-plane>
         </a-entity>
-
 
         <!-- Basic lighting -->
         <a-light type="ambient" color="#BBB"></a-light>
@@ -118,103 +105,66 @@
 
     </a-scene>
 
-    <!-- DOM Overlay element (Optional, useful for UI) -->
+    <!-- DOM Overlay element -->
     <div id="overlay"></div>
 
     <script>
+        // Javascript remains the same as previous version
         window.addEventListener('DOMContentLoaded', () => {
             const sceneEl = document.querySelector('a-scene');
             const instructionEl = document.getElementById('instruction');
             const reticleEl = document.getElementById('reticle');
             const businessCardEl = document.getElementById('businessCard');
-            let hasPlaced = false; // Flag to track if the object has been placed
+            let hasPlaced = false;
 
-            // Show instructions when AR Session starts (if supported)
             sceneEl.addEventListener('enter-vr', () => {
                 if (sceneEl.is('ar-mode')) {
                     instructionEl.style.display = 'block';
+                    hasPlaced = false; // Reset placement on entering AR
+                    businessCardEl.setAttribute('visible', 'false');
+                    businessCardEl.setAttribute('position', '0 -100 0');
                 }
             });
-            
-             // Hide instructions when exiting AR
+
             sceneEl.addEventListener('exit-vr', () => {
                 instructionEl.style.display = 'none';
-                reticleEl.setAttribute('visible', 'false'); // Hide reticle on exit
-                // Optionally reset placement state
-                // hasPlaced = false;
-                // businessCardEl.setAttribute('visible', 'false');
-                // businessCardEl.setAttribute('position', '0 -100 0');
+                reticleEl.setAttribute('visible', 'false');
             });
 
-
-            // Show reticle when hit test finds a surface
             reticleEl.addEventListener('ar-hit-test-start', () => {
-                 if (!hasPlaced) { // Only show if not placed yet
-                    instructionEl.textContent = "Tap screen to place card";
-                 }
+                 if (!hasPlaced) instructionEl.textContent = "Point at a flat surface";
             });
-            
-             // Update reticle visibility based on state changes
+
             reticleEl.addEventListener('ar-hit-test-achieved', () => {
                  if (!hasPlaced) {
-                    reticleEl.setAttribute('visible', 'true');
+                     reticleEl.setAttribute('visible', 'true');
+                     instructionEl.textContent = "Tap screen to place card";
                  }
             });
-            
+
             reticleEl.addEventListener('ar-hit-test-lost', () => {
                  reticleEl.setAttribute('visible', 'false');
-                 if (!hasPlaced) {
-                    instructionEl.textContent = "Point at a flat surface";
-                 }
+                 if (!hasPlaced) instructionEl.textContent = "Point at a flat surface";
             });
 
-
-            // Handle screen tap for placement
             sceneEl.addEventListener('ar-hit-test-select', () => {
                 if (reticleEl.getAttribute('visible') && !hasPlaced) {
-                     // Get the position and rotation from the reticle (which reflects the hit test result)
                     const position = reticleEl.getAttribute('position');
-                    // Optional: Keep the placed object oriented upright regardless of surface angle
-                    // const rotation = { x: 0, y: reticleEl.getAttribute('rotation').y, z: 0 };
-                    
-                    // Place the business card at the reticle's position
                     businessCardEl.setAttribute('position', position);
-                    // businessCardEl.setAttribute('rotation', rotation); // Use if you want upright orientation
-                    
-                    // Make the card visible and interactable
                     businessCardEl.setAttribute('visible', 'true');
-                    
-                    // Hide reticle and instructions after placement
                     reticleEl.setAttribute('visible', 'false');
                     instructionEl.style.display = 'none';
-                    
-                    // Set flag
                     hasPlaced = true;
-
-                     // Optional: Play sound
-                    // const sound = document.querySelector('#placeSound');
-                    // if (sound) sound.play();
-
-                     // Now that it's placed, enable interactions explicitly if needed
-                    // (Superhands usually works once visible and targeted by raycaster)
                     console.log("Business card placed at:", position);
                  }
             });
 
-            // --- Superhands Event Listeners (Example for scale/rotation feedback) ---
             businessCardEl.addEventListener('gesture-pinch', (event) => {
-                // event.detail.scaleFactor contains pinch scale change
                  console.log('Pinching', event.detail.scaleFactor);
             });
              businessCardEl.addEventListener('gesture-twist', (event) => {
-                // event.detail.angleDelta contains rotation change
                 console.log('Twisting', event.detail.angleDelta);
              });
-            // businessCardEl.addEventListener('gesture-drag', (event) => {
-            //     // Allows moving the object *after* placement if needed
-            //     // Needs careful implementation to move along the detected plane
-            //     console.log('Dragging');
-            // });
         });
     </script>
 </body>
