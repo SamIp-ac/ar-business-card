@@ -4,8 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AR Business Card</title>
+    <!-- Use consistent versions -->
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.7/aframe/build/aframe-ar.min.js"></script>
+    <!-- Add touch controls -->
     <script src="https://cdn.jsdelivr.net/npm/ar-touch@1.0.0/dist/ar-touch.min.js"></script>
     
     <style>
@@ -35,12 +37,14 @@
 </head>
 
 <body>
+    <!-- Loading indicator -->
     <div class="arjs-loader">
         <div>Loading, please wait...</div>
     </div>
     
+    <!-- Reminder message -->
     <div class="reminder-message">
-        Please scan the QR code to view AR content
+        Please scan the same QR code to view AR content
     </div>
 
     <a-scene 
@@ -50,35 +54,27 @@
         loading-screen="enabled: false"
         ar-touch="minDistanceToMarker: 0.2; maxDistanceToMarker: 1.5;">
         
-        <!-- Assets Preloading -->
-        <a-assets>
-            <a-asset-item id="businessCard" src="assets/SamIp_business_card.glb"></a-asset-item>
-            <a-asset-item id="knightModel" src="assets/the_forgotten_knight.glb"></a-asset-item>
-        </a-assets>
-
         <!-- Pattern Marker -->
         <a-marker type='pattern' url='assets/pattern-qrcode_samip-ac.github.io.patt' id="ar-marker">
-            <!-- Business Card -->
             <a-entity
-                gltf-model="#businessCard"
+                gltf-model="url(assets/SamIp_business_card.glb)"
                 scale="1.3 1.3 1.3"
-                position="-0.3 0.8 0"
-                rotation="90 0 0"
+                position="0 1 0"
+                rotation="90 90 90"
                 id="ar-object"
                 ar-touch-target>
             </a-entity>
-            
-            <!-- The Forgotten Knight -->
+        
             <a-entity
-                gltf-model="#knightModel"
-                scale="0.15 0.15 0.15"
-                position="0.3 0 0"
+                gltf-model="url(assets/the_forgotten_knight.glb)"
+                scale="0.8 0.8 0.8"
+                position="1 1 0"
                 rotation="0 180 0"
-                id="knight-object"
-                visible="false"
+                id="ar-object-2"
                 ar-touch-target>
             </a-entity>
         </a-marker>
+        
 
         <a-entity camera></a-entity>
     </a-scene>
@@ -88,7 +84,6 @@
         let markerVisible = false;
         const reminder = document.querySelector('.reminder-message');
         const marker = document.querySelector('#ar-marker');
-        const knightObject = document.querySelector('#knight-object');
         
         // Show reminder message immediately when page loads
         window.addEventListener('load', function() {
@@ -103,28 +98,18 @@
             marker.addEventListener('markerFound', function() {
                 markerVisible = true;
                 reminder.style.display = 'none';
-                // Only show knight after business card is loaded
-                setTimeout(() => {
-                    knightObject.setAttribute('visible', 'true');
-                }, 500);
             });
             
             marker.addEventListener('markerLost', function() {
                 markerVisible = false;
                 reminder.style.display = 'block';
-                knightObject.setAttribute('visible', 'false');
-            });
-            
-            // Error handling for models
-            knightObject.addEventListener('model-error', function() {
-                console.error('Failed to load knight model');
-                knightObject.setAttribute('visible', 'false');
-            });
-            
-            document.querySelector('#ar-object').addEventListener('model-error', function() {
-                console.error('Failed to load business card model');
             });
         });
     </script>
 </body>
 </html>
+
+<!-- assets/rx-0_full_armor_unicorn_gundam.glb:
+scale="0.3 0.3 0.3"
+position="0 0.1 0"
+rotation="0 180 0" -->
